@@ -18,20 +18,22 @@
 #define TAG "SWITCH"
 
 #define ACCESSORY_NAME  "SWITCH"
-#define MANUFACTURER_NAME   "YOUNGHYUN"
+#define MANUFACTURER_NAME   "Eduardo"
 #define MODEL_NAME  "ESP32_ACC"
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
 #if 1
-#define EXAMPLE_ESP_WIFI_SSID "unibj"
-#define EXAMPLE_ESP_WIFI_PASS "12673063"
+#define EXAMPLE_ESP_WIFI_SSID "Eduardo"
+#define EXAMPLE_ESP_WIFI_PASS "1020304050"
 #endif
 #if 0
 #define EXAMPLE_ESP_WIFI_SSID "NO_RUN"
 #define EXAMPLE_ESP_WIFI_PASS "1qaz2wsx"
 #endif
 
-static gpio_num_t LED_PORT = GPIO_NUM_2;
+static gpio_num_t LED_PORT_1 = GPIO_NUM_2;
+static gpio_num_t LED_PORT_2 = GPIO_NUM_14;
+static gpio_num_t LED_PORT_3 = GPIO_NUM_15;
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifi_event_group;
@@ -41,42 +43,117 @@ const int WIFI_CONNECTED_BIT = BIT0;
    but we only care about one event - are we connected
    to the AP with an IP? */
 static void* a;
-static void* _ev_handle;
-static int led = false;
+static void* _ev_handle_1;
+static void* _ev_handle_2;
+static void* _ev_handle_3;
+static int led_1 = false;
+static int led_2 = false;
+static int led_3 = false;
 
-void* led_read(void* arg)
+void* led_read_1(void* arg)
 {
     printf("[MAIN] LED READ\n");
-    return (void*)led;
+    return (void*)led_1;
 }
 
-void led_write(void* arg, void* value, int len)
+void* led_read_2(void* arg)
+{
+    printf("[MAIN] LED READ\n");
+    return (void*)led_2;
+}
+
+void* led_read_3(void* arg)
+{
+    printf("[MAIN] LED READ\n");
+    return (void*)led_3;
+}
+
+void led_write_1(void* arg, void* value, int len)
 {
     printf("[MAIN] LED WRITE. %d\n", (int)value);
 
-    led = (int)value;
+    led_1 = (int)value;
     if (value) {
-        led = true;
-        gpio_set_level(LED_PORT, 1);
+        led_1 = true;
+        gpio_set_level(LED_PORT_1, 1);
     }
     else {
-        led = false;
-        gpio_set_level(LED_PORT, 0);
+        led_1 = false;
+        gpio_set_level(LED_PORT_1, 0);
     }
 
-    if (_ev_handle)
-        hap_event_response(a, _ev_handle, (void*)led);
+    if (_ev_handle_1)
+        hap_event_response(a, _ev_handle_1, (void*)led_1);
 
     return;
 }
 
-void led_notify(void* arg, void* ev_handle, bool enable)
+void led_write_2(void* arg, void* value, int len)
 {
-    if (enable) {
-        _ev_handle = ev_handle;
+    printf("[MAIN] LED WRITE. %d\n", (int)value);
+
+    led_2 = (int)value;
+    if (value) {
+        led_2 = true;
+        gpio_set_level(LED_PORT_2, 1);
     }
     else {
-        _ev_handle = NULL;
+        led_2 = false;
+        gpio_set_level(LED_PORT_2, 0);
+    }
+
+    if (_ev_handle_2)
+        hap_event_response(a, _ev_handle_2, (void*)led_2);
+
+    return;
+}
+
+void led_write_3(void* arg, void* value, int len)
+{
+    printf("[MAIN] LED WRITE. %d\n", (int)value);
+
+    led_3 = (int)value;
+    if (value) {
+        led_3 = true;
+        gpio_set_level(LED_PORT_3, 1);
+    }
+    else {
+        led_3 = false;
+        gpio_set_level(LED_PORT_3, 0);
+    }
+
+    if (_ev_handle_3)
+        hap_event_response(a, _ev_handle_3, (void*)led_3);
+
+    return;
+}
+
+void led_notify_1(void* arg, void* ev_handle, bool enable)
+{
+    if (enable) {
+        _ev_handle_1 = ev_handle;
+    }
+    else {
+        _ev_handle_1 = NULL;
+    }
+}
+
+void led_notify_2(void* arg, void* ev_handle, bool enable)
+{
+    if (enable) {
+        _ev_handle_2 = ev_handle;
+    }
+    else {
+        _ev_handle_2 = NULL;
+    }
+}
+void led_notify_3(void* arg, void* ev_handle, bool enable)
+{
+    if (enable) {
+        _ev_handle_3 = ev_handle;
+    }
+    else {
+        _ev_handle_3 = NULL;
     }
 }
 
@@ -99,10 +176,20 @@ void hap_object_init(void* arg)
     };
     hap_service_and_characteristics_add(a, accessory_object, HAP_SERVICE_ACCESSORY_INFORMATION, cs, ARRAY_SIZE(cs));
 
-    struct hap_characteristic cc[] = {
-        {HAP_CHARACTER_ON, (void*)led, NULL, led_read, led_write, led_notify},
+    struct hap_characteristic c1[] = {
+        {HAP_CHARACTER_ON, (void*)led_1, NULL, led_read_1, led_write_1, led_notify_1},
     };
-    hap_service_and_characteristics_add(a, accessory_object, HAP_SERVICE_SWITCHS, cc, ARRAY_SIZE(cc));
+    hap_service_and_characteristics_add(a, accessory_object, HAP_SERVICE_SWITCHS, c1, ARRAY_SIZE(c1));
+
+    struct hap_characteristic c2[] = {
+        {HAP_CHARACTER_ON, (void*)led_2, NULL, led_read_2, led_write_2, led_notify_2},
+    };
+    hap_service_and_characteristics_add(a, accessory_object, HAP_SERVICE_SWITCHS, c2, ARRAY_SIZE(c2));
+
+    struct hap_characteristic c3[] = {
+        {HAP_CHARACTER_ON, (void*)led_3, NULL, led_read_3, led_write_3, led_notify_3},
+    };
+    hap_service_and_characteristics_add(a, accessory_object, HAP_SERVICE_SWITCHS, c3, ARRAY_SIZE(c3));
 }
 
 
@@ -167,8 +254,12 @@ void app_main()
 {
     ESP_ERROR_CHECK( nvs_flash_init() );
 
-    gpio_pad_select_gpio(LED_PORT);
-    gpio_set_direction(LED_PORT, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(LED_PORT_1);
+    gpio_pad_select_gpio(LED_PORT_2);
+    gpio_pad_select_gpio(LED_PORT_3);
+    gpio_set_direction(LED_PORT_1, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_PORT_2, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_PORT_3, GPIO_MODE_OUTPUT);
 
     wifi_init_sta();
 }
